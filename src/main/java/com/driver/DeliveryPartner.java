@@ -1,24 +1,30 @@
 package com.driver;
 
-public class DeliveryPartner {
+import io.swagger.models.auth.In;
+
+public class Order {
 
     private String id;
-    private int numberOfOrders;
+    private int deliveryTime;
 
-    public DeliveryPartner(String id) {
-        this.id = id;
-        this.numberOfOrders = 0;
+    public Order(String id, String deliveryTime) {
+
+        // The deliveryTime has to converted from string to int and then stored in the attribute
+        //deliveryTime  = HH*60 + MM
+
+        this.id=id;
+
+        String arr[]=deliveryTime.split(":");//12:45
+        int hr=Integer.parseInt(arr[0]);
+        int min=Integer.parseInt(arr[1]);
+
+        this.deliveryTime=(hr*60+min);
+
     }
 
     public String getId() {
         return id;
     }
 
-    public Integer getNumberOfOrders(){
-        return numberOfOrders;
-    }
-
-    public void setNumberOfOrders(Integer numberOfOrders) {
-        this.numberOfOrders = numberOfOrders;
-    }
+    public int getDeliveryTime() {return deliveryTime;}
 }
