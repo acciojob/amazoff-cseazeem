@@ -1,15 +1,39 @@
 package com.driver;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+public class DeliveryPartner {
 
-@SpringBootApplication
-@EnableSwagger2
-public class Application {
+	private String id;
+	private int numberOfOrders;
 
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+	public DeliveryPartner(String id) {
+		this.id = id;
+		this.numberOfOrders = 0;
+	}
 
+	public String getId() {
+		return id;
+	}
+
+	public DeliveryPartner() {
+
+	}
+	public void setNumberOfOrders(int numberOfOrders) {
+		this.numberOfOrders = numberOfOrders;
+	}
+	public DeliveryPartner(String id, int numberOfOrders) {
+		this.id = id;
+		this.numberOfOrders = numberOfOrders;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public Integer getNumberOfOrders(){
+		return numberOfOrders;
+	}
+
+	public void setNumberOfOrders(Integer numberOfOrders) {
+		this.numberOfOrders = numberOfOrders;
 	}
 }
