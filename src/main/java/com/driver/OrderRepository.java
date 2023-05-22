@@ -1,97 +1,171 @@
+
 package com.driver;
 
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.*;
-
 @Repository
 public class OrderRepository {
-    private static Map<String,Order> orderMap=new HashMap<>();
-    private static Map<String,DeliveryPartner> partnerMap=new HashMap<>();
+
+    //database//Hashmap
+    HashMap<String,Order> orderDB;
+    HashMap<String,DeliveryPartner> partnerDB;
+    HashMap<String, List<String>> pairDB;
+    HashSet<String> isOrderAssigned;
 
     public OrderRepository() {
+        orderDB=new HashMap<>();
+        partnerDB=new HashMap<>();
+        pairDB=new HashMap<>();
+        isOrderAssigned=new HashSet<>();
+
     }
-
-    public OrderRepository(Map<String, String> orderPartnerMap, Map<String, ArrayList<String>> partnerOrdersMap) {
-        this.orderPartnerMap = orderPartnerMap;
-        this.partnerOrdersMap = partnerOrdersMap;
-    }
-
-    private  Map<String,String> orderPartnerMap=new HashMap<>();
-
-    private  Map<String, ArrayList<String>> partnerOrdersMap=new HashMap<>();
-
-    public static Optional<DeliveryPartner> getPartnerId(String partnerId) {
-        if(partnerMap.containsKey(partnerId)){
-            return Optional.of(partnerMap.get(partnerId));
-        }
-        return Optional.empty();
-    }
-    public static Optional<Order> getOrderById(String orderId) {
-        if(orderMap.containsKey(orderId)){
-            return Optional.of(orderMap.get(orderId));
-        }
-        return Optional.empty();
-    }
-
 
     public void addOrder(Order order) {
-        orderMap.put(order.getId(),order);
+        orderDB.put(order.getId(),order);
+        isOrderAssigned.add(order.getId());
     }
 
-    public void addPartner(DeliveryPartner partnerId) {
-
-        partnerMap.put(partnerId.getId(), partnerId);
+    public void addPartner(String partnerId) {
+        DeliveryPartner d1=new DeliveryPartner(partnerId);
+        partnerDB.put(partnerId,d1);
     }
+
 
     public void addOrderPartnerPair(String orderId, String partnerId) {
-        orderPartnerMap.put(orderId,partnerId);
-        ArrayList<String> updatedOrders = new ArrayList<>();
-        if (partnerOrdersMap.containsKey(partnerId)) {
-            updatedOrders = partnerOrdersMap.get(partnerId);
-        }
-        updatedOrders.add(orderId);
-        partnerOrdersMap.put(partnerId, updatedOrders);
+        List<String> list=pairDB.getOrDefault(partnerId,new ArrayList<>());
+        list.add(orderId);
+        pairDB.put(partnerId,list);
+        partnerDB.get(partnerId).setNumberOfOrders(partnerDB.get(partnerId).getNumberOfOrders()+1);
+
+        isOrderAssigned.remove(orderId);
     }
 
-    public Map<String, String> getallorderpartnerMappings() {
-        return orderPartnerMap;
+    public Order getOrderById(String orderId) {
+        return orderDB.get(orderId);
+    }
+
+
+    public DeliveryPartner getPartnerById(String partnerId) {
+        return partnerDB.get(partnerId);
+    }
+
+    public Integer getOrderCountByPartnerId(String partnerId) {
+//        return partnerDB.get(partnerId).getNumberOfOrders();
+        return pairDB.get(partnerId).size();
     }
 
     public List<String> getOrdersByPartnerId(String partnerId) {
-        return partnerOrdersMap.get(partnerId);
+        List<String> list=pairDB.getOrDefault(partnerId,new ArrayList<>());
+        return list;
     }
 
     public List<String> getAllOrders() {
-        return new ArrayList<>(orderMap.keySet());
+        List<String> list=new ArrayList<>();
+        for(String s: orderDB.keySet()){
+            list.add(s);
+        }
+        return list;
     }
 
-    public List<String> getAssingnedOrders() {
-        return new ArrayList (orderPartnerMap.keySet());
+    public Integer getCountOfUnassignedOrders() {
+        return isOrderAssigned.size();
     }
 
+    public Integer getOrdersLeftAfterGivenTimeByPartnerId(String time, String partnerId) {
+        Integer count=0;
+        //converting given string time to integer
+        String arr[]=time.split(":"); //12:45
+        int hr=Integer.parseInt(arr[0]);
+        int min=Integer.parseInt(arr[1]);
 
-    public void deletePartnerbyId(String partnerId) {
-        partnerMap.remove(partnerId);
-        partnerOrdersMap.remove(partnerId);
+        int total=(hr*60+min);
+
+        List<String> list=pairDB.getOrDefault(partnerId,new ArrayList<>());
+        if(list.size()==0)return 0; //no order assigned to partnerId
+
+        for(String s: list){
+            Order currentOrder=orderDB.get(s);
+            if(currentOrder.getDeliveryTime()>total){
+                count++;
+            }
+        }
+
+        return count;
+
     }
 
-    public void removePartnerOrderMapping(String orderId) {
-        orderPartnerMap.remove(orderId);
+    public String getLastDeliveryTimeByPartnerId(String partnerId) {
+        //return in HH:MM format
+        String str="00:00";
+        int max=0;
+
+        List<String>list=pairDB.getOrDefault(partnerId,new ArrayList<>());
+        if(list.size()==0)return str;
+        for(String s: list){
+            Order currentOrder=orderDB.get(s);
+            max=Math.max(max,currentOrder.getDeliveryTime());
+        }
+        //convert int to string (140-> 02:20)
+        int hr=max/60;
+        int min=max%60;
+
+        if(hr<10){
+            str="0"+hr+":";
+        }else{
+            str=hr+":";
+        }
+
+        if(min<10){
+            str+="0"+min;
+        }
+        else{
+            str+=min;
+        }
+        return str;
+
+
     }
 
-    public void deleteOrder(String orderId) {
-        orderMap.remove(orderId);
-        orderPartnerMap.remove(orderId);
+    public void deletePartnerById(String partnerId) {
+        if(!pairDB.isEmpty()){
+            isOrderAssigned.addAll(pairDB.get(partnerId));
+        }
+//        if(!partnerDB.containsKey(partnerId)){
+//            return;
+//        }
+        //removing form partnerDB
+        partnerDB.remove(partnerId);
+
+//        List<String>list=pairDB.getOrDefault(partnerId,new ArrayList<>());
+//        if(list.size()==0)return;
+//        isOrderAssigned.addAll(pairDB.get(partnerId));
+
+        //remove form the pairDB
+        pairDB.remove(partnerId);
+
     }
 
-    public String getPartnerForOrder(String orderId) {
-        return orderPartnerMap.get(orderId);
-    }
+    public void deleteOrderById(String orderId) {
+        //Delete an order and the corresponding partner should be unassigned
+        if(orderDB.containsKey(orderId)){
+            if(isOrderAssigned.contains(orderId)){
+                isOrderAssigned.remove(orderId);
+            }
+            else{
 
-    public void removeOrderForPartner(String partnerId, String orderId) {
-        ArrayList<String> orderIds = partnerOrdersMap.get(partnerId);
-        orderIds.remove(orderId);
-        partnerOrdersMap.put(partnerId, orderIds);
+                for(String str : pairDB.keySet()){
+                    List<String> list=pairDB.get(str);
+                    if(list.contains(orderId)){
+                        list.remove(orderId);
+                    }
+                }
+            }
+        }
+
+
     }
 }
